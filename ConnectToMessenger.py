@@ -1,9 +1,9 @@
 from flask import Flask,request
-from Messenger import *
 from Config import WEB_HOOK_TOKEN
+from ClientHandler import *
 app = Flask(__name__)
 
-
+clientHandler =ClientHandler()
 
 @app.route("/")
 def verify():
@@ -19,7 +19,7 @@ def hello():
 
 @app.route('/', methods=['POST'])
 def webhook():
-   Messenger = MyMessenger()
+   global clientHandler
    data = request.get_json()
    print(data)
    if data["object"] == "page":
@@ -31,25 +31,20 @@ def webhook():
                    if 'text' in message:
                        message_text = message["text"]
                        print(message_text)
-                       Messenger.setText(message_text)
-                       Messenger.send(sender_id)
+                       clientHandler.setMessage(sender_id,message_text)
+                       clientHandler.ClientRun(sender_id)
                    elif 'attachments' in message:
                        for attachment in message['attachments']:
                            if attachment['type'] == 'location':
                                print(attachment['payload']['coordinates']['lat'],attachment['payload']['coordinates']['long'])
-                               Messenger = MyMessenger()
-                               Messenger.setText('你去哪裡看電影呢?')
-                               Messenger.addPostback('國賓','國賓')
-                               Messenger.addPostback('新光','新光')
-                               Messenger.addPostback('威秀','威秀')
-                               Messenger.send(sender_id)
+                               clientHandler.setLocation(sender_id,[attachment['payload']['coordinates']['lat'],attachment['payload']['coordinates']['long']])
+                               clientHandler.ClientRun(sender_id)
                elif messaging_event.get('postback'):
                    message = messaging_event['postback']
                    sender_id = messaging_event["sender"]["id"]
                    print('psotTitle=',message['title'],'payload=',message['payload'])
-                   Messenger.setText(message['payload'])
-                   Messenger.send(sender_id)
-
+                   clientHandler.setMessage(sender_id,message['payload'])
+                   clientHandler.ClientRun(sender_id)
    return "ok", 200
 
 

@@ -3,10 +3,11 @@ import requests
 from Config import PAGE_ACCESS_TOKEN
 
 class MyMessenger:
-    def __init__(self):
+    def __init__(self,uid=''):
         self.type='null'
         self.txt=''
         self.button=[]
+        self.uid=uid
     def setText(self,text):
         if self.type=='null':
             self.type='text'
@@ -21,8 +22,10 @@ class MyMessenger:
             "messenger_extensions": True,
             "fallback_url": "https://petersfancyapparel.com/fallback"
         })
-    def addPostback(self,title,payload):
+    def addPostback(self,title,payload=''):
         self.type='button'
+        if payload=='':
+            payload=title
         self.button.append({
             "type": "postback",
             "title": title,
@@ -54,7 +57,17 @@ class MyMessenger:
                 }
             }
 
-    def send(self,uid):
+    def send(self,uid=''):
+        if self.type=='null':
+            return
+        if uid=='' and self.uid=='':
+            print('Please setup uid!!!')
+            return
+        elif uid!='':
+            pass
+        elif uid=='' and self.uid!='':
+            uid=self.uid
+
         print("sending message to {recipient}: {text}".format(recipient=uid, text=self.txt))
         params = {
             "access_token": PAGE_ACCESS_TOKEN
