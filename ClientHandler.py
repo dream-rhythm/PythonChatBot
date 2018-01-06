@@ -49,47 +49,81 @@ class Client:
         self.nowMsg=''
         self.location=[0,0]
         self.Messenger = MyMessenger(uid)
+        self.movieName=""
+        self.near=[]
+        self.place=[0,0,0]
+
     def setMsg(self,msg):
         print('run setMsg, ori=',self.nowMsg,' To=',msg)
         self.nowMsg=msg
+
     def setLocation(self,loc):
         self.location=loc
+
     def status0(self):
         self.Messenger.setText('Hello!!!\n請問有甚麼需要幫忙的嗎?')
         self.Messenger.addPostback('推薦電影','推薦電影')
         self.Messenger.addPostback('查最近的電影院','查最近的電影院')
         self.Messenger.send()
+
     def status10(self):
         self.Messenger.setText('請傳送您的位置給我唷!')
         self.Messenger.send()
+
     def status11(self):
         self.Messenger.setText('查詢中請稍後...')
         self.Messenger.send()
-        near = movietheater.findWhoIsNearToMe(self.location[0],self.location[1])
-        if len(near)==0:
+        self.near = movietheater.findWhoIsNearToMe(self.location[0],self.location[1])
+        if len(self.near)==0:
             self.Messenger.setText('抱歉!\n我在附近找不到電影院...')
             self.Messenger.send()
         else:
-            place=[False,False,False]
-            for ele in near:
+            self.place=[0,0,0]
+            for ele in self.near:
                 if ele[1]=='賓':
-                    place[1]=True
+                    self.place[1]+=1
                 elif ele[2]=='新':
-                    place[2]=True
+                    self.place[2]+=1
                 else:
-                    place[0]=True
-            txt="我在附近找到"+str(len(near))+"間電影院\n你想去哪一家呢?"
-            print(near)
+                    self.place[0]+=1
+            txt="我在附近找到"+str(len(self.near))+"間電影院\n你想去哪一家呢?"
+            print(self.near)
             self.Messenger.setText(txt)
-            if place[0]:
+            if self.place[0]:
                 self.Messenger.addPostback('華納威秀')
-            if place[1]:
+            if self.place[1]:
                 self.Messenger.addPostback('國賓影城')
-            if place[2]:
+            if self.place[2]:
                 self.Messenger.addPostback('新光影城')
             self.Messenger.send()
+
     def status12(self):
-        pass
+        ans=[]
+        if self.nowMsg=='華納威秀':
+            for ele in self.near:
+                if ele[1]!='賓' and ele[2]!='新':
+                    ans.append(ele)
+        elif self.nowMsg=='國賓影城':
+            for ele in self.near:
+                if ele[1]=='賓' :
+                    ans.append(ele)
+        else:
+            for ele in self.near:
+                if ele[2]=='新':
+                    ans.append(ele)
+        txt = "我在附近找到" + str(len(ans)) + "間"+self.nowMsg+"\n你想去哪一家呢?"
+        self.Messenger.setText(txt)
+        for ele in ans:
+            self.Messenger.addPostback(ele)
+        self.Messenger.send()
+
+    def status13(self):
+        if self.movieName=="":
+            self.status=100
+            self.run()
+        else:
+            self.Messenger.setText("場次查詢中...")
+            self.Messenger.send()
 
     def findStatus(self):
         if self.nowMsg=='推薦電影':
@@ -98,8 +132,20 @@ class Client:
             self.status=10
         elif self.nowMsg=='查最近的電影院' and self.location!=[0,0]:
             self.status=11
-        elif self.nowMsg=='華納威秀' or self.nowMsg=='新光影城' or self.nowMsg=='國賓影城':
+        elif self.nowMsg=='華納威秀' and self.place[0]==1:
+            self.status = 13
+        elif self.nowMsg=='新光影城' and self.place[2]==1:
+            self.status = 13
+        elif  self.nowMsg=='國賓影城' and self.place[1]==1:
+            self.status=13
+        elif self.nowMsg=='華納威秀' and self.place[0]>1:
+            self.status =12
+        elif self.nowMsg=='新光影城' and self.place[2]>1:
+            self.status = 12
+        elif  self.nowMsg=='國賓影城' and self.place[1]>1:
             self.status=12
+        elif (self.status==12 and self.nowMsg in self.near) :
+            self.status=13
 
     def printUserStatus(self):
         print('user',self.uid,':status=',self.status,'nowMsg=',self.nowMsg,'loc=',self.location)
@@ -115,3 +161,5 @@ class Client:
             self.status11()
         elif self.status==12:
             self.status12()
+        elif self.status==13:
+            self.status13()

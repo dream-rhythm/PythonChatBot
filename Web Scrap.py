@@ -19,7 +19,7 @@ class WebScrap:
                 movieData['name_eng']=self.removeSpace(ele.find_all('a')[1].get_text())
                 movieData['href']=ele.a.get('href')
                 movieData['want']=ele.find_all('div',{'class':'leveltext'})[0].span.get_text()
-                movieData['star']=ele.find_all('div',{'class':'leveltext starwithnum'})[0].span.get('data-num')
+                movieData['star']=float(ele.find_all('div',{'class':'leveltext starwithnum'})[0].span.get('data-num'))
                 html = urlopen(ele['href'])
                 bsobj = BeautifulSoup(html, 'lxml')
                 movieData['info']=bsobj.find_all('div', {'class': 'gray_infobox_inner'})[0].span.get_text()
