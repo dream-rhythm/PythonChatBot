@@ -1,5 +1,8 @@
 import googlemaps
 import csv
+from selenium import webdriver
+from time import sleep
+
 
 gmaps = googlemaps.Client(key='AIzaSyCvmftDhP4yEN-as8P7pYiT-fwwIjpRhpI')
 
@@ -9,6 +12,7 @@ class MovieTheater:
         f = open('movietheater.csv', 'r')
         csvreader = csv.reader(f)
         self.allData=[]
+        self.timetable={}
         for row in csvreader:
             self.allData.append(row)
         f.close()
@@ -84,5 +88,91 @@ class MovieTheater:
                 ans.append(ele[0])
         return ans
 
-#a = MovieTheater()
-#a.firstrun()
+    def getMovies(self,TheaterName):
+        if TheaterName[1]=='賓':#國賓
+            pass
+        elif TheaterName[2]=='新':#新光
+            pass
+        else:
+            table = self.getViewshow(TheaterName)
+            self.timetable[TheaterName]=table
+            arr = []
+            for ele in table:
+                arr.append(ele)
+            return arr
+        #吃一個電影院的名稱(上面定義的那些)
+        #以陣列回傳該影城現正上映的電影
+        #因網頁使用ajex動態獲取資料
+        #故須使用webdriver呼叫Firefox出來用
+
+    def getTimeTable(self,TheaterName, Movie):
+        if TheaterName[1]=='賓':#國賓
+            pass
+        elif TheaterName[2]=='新':#新光
+            pass
+        else:
+            if TheaterName not in self.timetable:
+                self.getMovies(TheaterName)
+            return self.timetable[TheaterName][Movie]
+        #吃一個電影院名稱以及電影名稱
+        #以陣列回傳該影城該電影的時刻表
+
+
+    def Viewshow_timeCheaker(self,str):
+        str=str.split(':')
+        if len(str)!=2:
+            return False
+        if str[1][-4:]=='(隔日)':
+            str[1]=str[1][:-4]
+        if str[0].isdigit()==False or str[1].isdigit()==False:
+            return False
+        if int(str[0]) in range(24) and int(str[1]) in range(60):
+            return True
+        return False
+    def Viewshow_paser(self,arr):
+        movie = {}
+        status=0
+        name=""
+        for ele in arr:
+            if status==0:#get chinese name
+                movie[ele]=[]
+                name=ele
+                status=1
+            elif status==1:#get eng name
+                status=2
+            elif status==2:#get type
+                if ele in ['IMAX 3D','數位']:
+                    pass
+                elif self.Viewshow_timeCheaker(ele):
+                    movie[name].append(ele)
+                else:
+                    name=ele
+                    movie[name]=[]
+                    status=1
+        return movie
+    def getViewshow(self,theatername):
+        theaterID={"台北信義威秀影城":"1",
+                   "台北京站威秀影城":"2",
+                   "台北日新威秀影城":"3",
+                   "板橋大遠百威秀影城":"4",
+                   "林口MITSUI OUTLET PARK威秀影城":"5",
+                   "新竹大遠百威秀影城":"7",
+                   "新竹巨城威秀影城":"9",
+                   "頭份尚順威秀影城":"10",
+                   "台中大遠百威秀影城":"11",
+                   "台中TIGER CITY威秀影城":"12",
+                   "台南大遠百威秀影城":"15",
+                   "台南南紡威秀影城":"16",
+                   "高雄大遠百威秀影城":"18"}
+        driver = webdriver.Firefox()
+        driver.get("https://www.vscinemas.com.tw/theater/detail.aspx?id="+theaterID[theatername])
+        sleep(1)
+        data = driver.find_element_by_xpath('//*[@id="movieTime-1037796943"]')
+        info = data.text.split('\n')[1:]
+        driver.close()
+        return self.Viewshow_paser(info)
+    
+if __name__ =='__main__':
+    a = MovieTheater()
+    print(a.getMovies('台中大遠百威秀影城'))
+    print(a.getTimeTable('台中大遠百威秀影城','我要活下去'))
