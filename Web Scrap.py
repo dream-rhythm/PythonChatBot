@@ -25,8 +25,7 @@ class WebScrap:
                 movieData['info']=bsobj.find_all('div', {'class': 'gray_infobox_inner'})[0].span.get_text()
                 self.allData.append(movieData)
         print(self.allData)
-
-	def getSk(self):
+    def getSk(self):
         html = urlopen('http://www.skcinemas.com/MovieList.aspx')
 
         bsobj = BeautifulSoup(html, "lxml")
@@ -48,8 +47,7 @@ class WebScrap:
             movieData['movie_detail']=target.find_all('div',text = True) 
             self.allData.append(movieData)
         print(self.allData)
-		
-	def getVs(self):
+    def getVs(self):
         html = urlopen('https://www.vscinemas.com.tw/film/index.aspx')
 
         bsobj = BeautifulSoup(html, "lxml")
@@ -72,6 +70,12 @@ class WebScrap:
             movieData['movie_detail']=target.find_all('p',text = True) 
             self.allData.append(movieData)
         print(self.allData)
-if __name__ =='__main__':
+if __name__ =='新光':
+    obj = WebScrap()
+    obj.getSk()
+if __name__ =='威秀':
+    obj = WebScrap()
+    obj.getVs()
+if __name__ =='Yahooˇ電影':
     obj = WebScrap()
     obj.getYahoo()
