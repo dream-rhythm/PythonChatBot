@@ -3,7 +3,7 @@ from urllib.request import urlopen
 from bs4 import BeautifulSoup
 import requests
 import re
-import pandas
+import pandas as pd
 import jieba
 
 html = urlopen("https://movies.yahoo.com.tw/chart.html")
@@ -95,12 +95,13 @@ def UserComment(s,j):
                     Comment.append(context.getText())
 
 ####Chinese sentimentDict
-positives_set = {}
-negatives_set = {}
-not_set = {}
+
 degree_dict={}
 
-stentiment_df = pandas.read_csv('SentimentDict.csv')
+stentiment_df = pd.read_csv('SentimentDict.csv')
+positives_set = set(stentiment_df['positive'])
+negatives_set = set(stentiment_df['negative'])
+not_set = set(stentiment_df['not'])
 
 def SetDgree(s,d):
     for word in stentiment_df[s]:
@@ -108,9 +109,6 @@ def SetDgree(s,d):
 
 def OpenSentimentDict():
 
-    positives_set = set(stentiment_df['positive'])
-    negatives_set = set(stentiment_df['negatives'])
-    not_set = set(stentiment_df['not'])
     SetDgree('degree-1', 2.2)
     SetDgree('degree-2', 2.0)
     SetDgree('degree-3', 1.8)
@@ -153,6 +151,12 @@ def analyze(text):
 
     return sum
 
+def sentiment_analysis(sum):
+    if sum > 0:
+        return 1
+    else:
+        return 0
+
 for link in linkings:
     MobvieTitle(link)
     sleep(1)
@@ -161,20 +165,35 @@ for link in linkings:
 for linkMoreLook in LinkMoreLook:
     inputUserCommentLink(linkMoreLook)
 
-print(MaxCommentLink)
+
 for MaxLink in MaxCommentLink:
     UserComment(MaxLink,j)
     j += 1
 
-MovieScore = {}
-SumScore = 0
-LenMovieComment = 0
-index = 0
-
+MovieScore = []
+MovieSentiment = []
 for x in range(0, len(MovieTitle)):
-    print(Comment.index(MovieTitle[x]))
-    #for i in range(Comment.index(MovieTitle[x])+1,):
-        #SumScore = analyze(Comment[i])
-        #LenMovieComment += 1
+    SumScore = 0
+    LenMovieComment = 0
+    index = Comment.index(MovieTitle[x])+1
+    if x == len(MovieTitle)-1:
+        while index < len(Comment):
+            SumScore += analyze(Comment[index])
+            LenMovieComment += 1
+            index +=1
+    else:
+        while index < Comment.index(MovieTitle[x+1]):
+            SumScore += analyze(Comment[index])
+            LenMovieComment += 1
+            index +=1
+    MovieScore.append(SumScore/LenMovieComment)
+    MovieSentiment.append( sentiment_analysis(SumScore))
 
-#print(MovieScore)
+df =pd.DataFrame({"Chinese Title":MovieTitle,"English Title":MovieEngTitle,"Satisfaction":Satisfaction
+    ,"Expection":Expect,"Score":MovieScore,"Sentiment":MovieSentiment})
+
+writer = pd.ExcelWriter("YahooMovie.xlsx",engine="xlsxwriter")
+df.to_excel(writer,index=False,sheet_name='sheet1')
+writer.save()
+
+
