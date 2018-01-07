@@ -1,5 +1,10 @@
 import googlemaps
 import csv
+from selenium import webdriver
+from time import sleep
+from urllib.request import urlopen   #for load web page
+from bs4 import BeautifulSoup        #for analysis web page
+
 
 gmaps = googlemaps.Client(key='AIzaSyCvmftDhP4yEN-as8P7pYiT-fwwIjpRhpI')
 
@@ -9,6 +14,7 @@ class MovieTheater:
         f = open('movietheater.csv', 'r')
         csvreader = csv.reader(f)
         self.allData=[]
+        self.timetable={}
         for row in csvreader:
             self.allData.append(row)
         f.close()
@@ -84,5 +90,164 @@ class MovieTheater:
                 ans.append(ele[0])
         return ans
 
-#a = MovieTheater()
-#a.firstrun()
+    def getMovies(self,TheaterName):
+        if TheaterName[1]=='賓':#國賓
+            table = self.getAmbassador(TheaterName)
+        elif TheaterName[2]=='新':#新光
+            table = self.getSkcinems(TheaterName)
+        else:
+            table = self.getViewshow(TheaterName)
+        self.timetable[TheaterName]=table
+        arr = []
+        for ele in table:
+            arr.append(ele)
+        return arr
+        #吃一個電影院的名稱(上面定義的那些)
+        #以陣列回傳該影城現正上映的電影
+        #因網頁使用ajex動態獲取資料
+        #故須使用webdriver呼叫Firefox出來用
+
+    def getTimeTable(self,TheaterName, Movie):
+        if TheaterName not in self.timetable:
+            self.getMovies(TheaterName)
+        return self.timetable[TheaterName][Movie]
+
+    def Ambassador_paser(self,arr):
+        movie={}
+        status=0
+        name=""
+        for ele in arr:
+            if status==0:#get chinese name
+                name=ele
+                movie[name] = []
+                status=1
+            elif status==1:#get eng name
+                status=2
+            elif status==2:#get actor
+                status=3
+            elif status==3:#get on air time
+                status=4
+            elif status==4:#get theater type
+                status=5
+            elif status==5:#get theater inffo
+                status=6
+            elif status==6:
+                movie[name].extend(ele.split('|')[1:])
+                status=7
+            elif status==7:
+                if ele[0]=='(':
+                    status=5
+                else:
+                    name=ele
+                    movie[ele]=[]
+                    status=1
+        return  movie
+    def getAmbassador(self,theatername):
+        theaterID={
+            "國賓大戲院":"84b87b82-b936-4a39-b91f-e88328d33b4e",
+            "國賓影城@台北微風廣場":"5c2d4697-7f54-4955-800c-7b3ad782582c",
+            "國賓影城@台北長春廣場":"453b2966-f7c2-44a9-b2eb-687493855d0e",
+            "國賓影城@中和環球購物中心":"357633f4-36a4-428d-8ac8-dee3428a5919",
+            "國賓影城@林口昕境廣場":"9383c5fa-b4f3-4ba8-ba7a-c25c7df95fd0",
+            "國賓影城@新莊晶冠廣場":"3301d822-b385-4aa8-a9eb-aa59d58e95c9",
+            "國賓影城@八德廣豐新天地":"8fda9934-73d4-4c14-b1c4-386c2b81045c",
+            "國賓影城@台南國賓廣場":"ace1fe19-3d7d-4b7c-8fbe-04897cbed08c",
+            "國賓影城@高雄義大世界":"ec07626b-b382-474e-be39-ad45eac5cd1c",
+            "國賓影城@高雄大魯閣草衙道":"f760950a-94b6-4e04-9573-831ed7283c5c",
+            "國賓影城@屏東環球購物中心":"41aae717-4464-49f4-ac26-fec2d16acbd6",
+            "國賓影城@金門昇恆昌金湖廣場":"65db51ce-3ad5-48d8-8e32-7e872e56aa4a"
+        }
+        driver = webdriver.Firefox()
+        driver.get("http://www.ambassador.com.tw/showtime_list.html?theaterid=" + theaterID[theatername])
+        sleep(1)
+        data = driver.find_element_by_xpath('//*[@id="mt-main-movie-list-view"]')
+        info = data.text.split('\n')
+        driver.close()
+        return self.Ambassador_paser(info)
+
+    def Viewshow_timeCheaker(self,str):
+        str=str.split(':')
+        if len(str)!=2:
+            return False
+        if str[1][-4:]=='(隔日)':
+            str[1]=str[1][:-4]
+        if str[0].isdigit()==False or str[1].isdigit()==False:
+            return False
+        if int(str[0]) in range(24) and int(str[1]) in range(60):
+            return True
+        return False
+    def Viewshow_paser(self,arr):
+        movie = {}
+        status=0
+        name=""
+        for ele in arr:
+            if status==0:#get chinese name
+                movie[ele]=[]
+                name=ele
+                status=1
+            elif status==1:#get eng name
+                status=2
+            elif status==2:#get type
+                if ele in ['IMAX 3D','數位']:
+                    pass
+                elif self.Viewshow_timeCheaker(ele):
+                    movie[name].append(ele)
+                else:
+                    name=ele
+                    movie[name]=[]
+                    status=1
+        return movie
+    def getViewshow(self,theatername):
+        theaterID={"台北信義威秀影城":"1",
+                   "台北京站威秀影城":"2",
+                   "台北日新威秀影城":"3",
+                   "板橋大遠百威秀影城":"4",
+                   "林口MITSUI OUTLET PARK威秀影城":"5",
+                   "新竹大遠百威秀影城":"7",
+                   "新竹巨城威秀影城":"9",
+                   "頭份尚順威秀影城":"10",
+                   "台中大遠百威秀影城":"11",
+                   "台中TIGER CITY威秀影城":"12",
+                   "台南大遠百威秀影城":"15",
+                   "台南南紡威秀影城":"16",
+                   "高雄大遠百威秀影城":"18"}
+        driver = webdriver.Firefox()
+        driver.get("https://www.vscinemas.com.tw/theater/detail.aspx?id="+theaterID[theatername])
+        sleep(1)
+        data = driver.find_element_by_xpath('//*[@id="movieTime-1037796943"]')
+        info = data.text.split('\n')[1:]
+        driver.close()
+        return self.Viewshow_paser(info)
+
+    def getSkcinems(self,theatername):
+        driver = webdriver.Firefox()
+        driver.get('http://www.skcinemas.com/MovieList.aspx')
+        if theatername=='台北新光影城':
+            but = driver.find_element_by_xpath('//*[@id="ctl00_ASPxMenu1_DXI2_I"]')
+            but.click()
+        elif theatername=='台南新光影城':
+            but = driver.find_element_by_xpath('//*[@id="ctl00_ASPxMenu1_DXI1_I"]')
+            but.click()
+        bsobj = BeautifulSoup(driver.page_source, "lxml")
+        blocks = bsobj.find_all('td',{'class':'dxdvItem'})
+        if theatername=='台中新光影城':
+            but=driver.find_element_by_xpath('/html/body/form/div[3]/div/div/div[2]/table/tbody/tr[1]/td[2]/table/tbody/tr/td/table/tbody/tr[3]/td/div/a')
+            but.click()
+            sleep(3)
+            bsobj = BeautifulSoup(driver.page_source, "lxml")
+            blocks.extend(bsobj.find_all('td', {'class': 'dxdvItem'}))
+        movies ={}
+        for ele in blocks:
+            href=ele.find_all('a')[0].get('href')
+            driver.get('http://www.skcinemas.com/'+href)
+            times = driver.find_element_by_xpath('/html/body/form/div[3]/div/div/div[2]/div[3]/div/table/tbody/tr[2]').text
+            name = driver.find_element_by_xpath('/html/body/form/div[3]/div/div/div[1]/div[1]/div[3]/table/tbody/tr[1]/td/span').text
+            movies[name]=times.split(' ')
+        return movies
+
+if __name__ =='__main__':
+    a = MovieTheater()
+    #a.getSkcinems('台北新光影城')
+    print(a.getMovies('台中新光影城'))
+    print(a.getTimeTable('台中新光影城','血觀音'))
+    #print(a.getAmbassador('國賓大戲院'))
