@@ -48,6 +48,30 @@ class WebScrap:
             movieData['movie_detail']=target.find_all('div',text = True) 
             self.allData.append(movieData)
         print(self.allData)
+		
+	def getVs(self):
+        html = urlopen('https://www.vscinemas.com.tw/film/index.aspx')
+
+        bsobj = BeautifulSoup(html, "lxml")
+
+        blocks = bsobj.find_all('section',{"class" : "infoArea"})
+        detail = bsobj.find_all('figure',style = "height: 279px;")
+        for ele in blocks:
+            movieData={}
+            movieData['name_zh']=self.removeSpace(ele.find('h2',text = True).get_text())
+            movieData['name_eng']=self.removeSpace(ele.find('h3',text = True).get_text())
+            movieData['movie_date']=self.removeSpace(ele.find('time',text = True).get_text())
+            self.allData.append(movieData)
+            a = ''
+            detail = ''
+            a = ele.find(a,href = True)
+            movieData['movie_href']=a['href']
+            detail = urlopen("https://www.vscinemas.com.tw/film/"+a['href'])
+            bsobj = BeautifulSoup(detail, "lxml")
+            target = bsobj.find('div',{"class":"bbsArticle"})
+            movieData['movie_detail']=target.find_all('p',text = True) 
+            self.allData.append(movieData)
+        print(self.allData)
 if __name__ =='__main__':
     obj = WebScrap()
     obj.getYahoo()
