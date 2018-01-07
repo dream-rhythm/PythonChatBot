@@ -26,7 +26,28 @@ class WebScrap:
                 self.allData.append(movieData)
         print(self.allData)
 
+	def getSk(self):
+        html = urlopen('http://www.skcinemas.com/MovieList.aspx')
 
+        bsobj = BeautifulSoup(html, "lxml")
+
+        blocks = bsobj.find_all('td', {"class": "dxdvItem"})
+        for ele in blocks:
+            a = ''
+            movieData={}
+            detail = ''
+            movieData['name_zh']=self.removeSpace(ele.find('div',style="font-family: 微軟正黑體; font-weight: bold; font-size: 10pt; color: #003b70;width:125px;height:36px;text-align:center;overflow:hidden;vertical-align:top;").get_text())
+            movieData['name_eng']=self.removeSpace(ele.find('div',style="font-family: 微軟正黑體; font-weight: bold; font-size: 8pt; color: #003b70;width:125px;text-align:center;height:15px;overflow:hidden;").get_text())
+            movieData['movie_date']=self.removeSpace(ele.find('div',style="font-family: 微軟正黑體; font-weight: bold; font-size: 8pt; width:125px;text-align:center;margin-top:10px;color:black;").get_text())
+            
+            a = ele.find(a,href = True)
+            movieData['movie_href']=a['href']
+            detail = urlopen("http://www.skcinemas.com/"+a['href'])
+            bsobj = BeautifulSoup(detail, "lxml")
+            target = bsobj.find('div',style = "border: 2px solid #000000; padding:8px;margin:-4px 0 0 0;")
+            movieData['movie_detail']=target.find_all('div',text = True) 
+            self.allData.append(movieData)
+        print(self.allData)
 if __name__ =='__main__':
     obj = WebScrap()
     obj.getYahoo()
