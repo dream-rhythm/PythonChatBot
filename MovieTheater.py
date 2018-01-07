@@ -90,7 +90,12 @@ class MovieTheater:
 
     def getMovies(self,TheaterName):
         if TheaterName[1]=='賓':#國賓
-            pass
+            table = self.getAmbassador(TheaterName)
+            self.timetable[TheaterName]=table
+            arr=[]
+            for ele in table:
+                arr.append(ele)
+            return arr
         elif TheaterName[2]=='新':#新光
             pass
         else:
@@ -106,17 +111,62 @@ class MovieTheater:
         #故須使用webdriver呼叫Firefox出來用
 
     def getTimeTable(self,TheaterName, Movie):
-        if TheaterName[1]=='賓':#國賓
-            pass
-        elif TheaterName[2]=='新':#新光
-            pass
-        else:
-            if TheaterName not in self.timetable:
-                self.getMovies(TheaterName)
-            return self.timetable[TheaterName][Movie]
-        #吃一個電影院名稱以及電影名稱
-        #以陣列回傳該影城該電影的時刻表
+        if TheaterName not in self.timetable:
+            self.getMovies(TheaterName)
+        return self.timetable[TheaterName][Movie]
 
+    def Ambassador_paser(self,arr):
+        movie={}
+        status=0
+        name=""
+        for ele in arr:
+            if status==0:#get chinese name
+                name=ele
+                movie[name] = []
+                status=1
+            elif status==1:#get eng name
+                status=2
+            elif status==2:#get actor
+                status=3
+            elif status==3:#get on air time
+                status=4
+            elif status==4:#get theater type
+                status=5
+            elif status==5:#get theater inffo
+                status=6
+            elif status==6:
+                movie[name].extend(ele.split('|')[1:])
+                status=7
+            elif status==7:
+                if ele[0]=='(':
+                    status=5
+                else:
+                    name=ele
+                    movie[ele]=[]
+                    status=1
+        return  movie
+    def getAmbassador(self,theatername):
+        theaterID={
+            "國賓大戲院":"84b87b82-b936-4a39-b91f-e88328d33b4e",
+            "國賓影城@台北微風廣場":"5c2d4697-7f54-4955-800c-7b3ad782582c",
+            "國賓影城@台北長春廣場":"453b2966-f7c2-44a9-b2eb-687493855d0e",
+            "國賓影城@中和環球購物中心":"357633f4-36a4-428d-8ac8-dee3428a5919",
+            "國賓影城@林口昕境廣場":"9383c5fa-b4f3-4ba8-ba7a-c25c7df95fd0",
+            "國賓影城@新莊晶冠廣場":"3301d822-b385-4aa8-a9eb-aa59d58e95c9",
+            "國賓影城@八德廣豐新天地":"8fda9934-73d4-4c14-b1c4-386c2b81045c",
+            "國賓影城@台南國賓廣場":"ace1fe19-3d7d-4b7c-8fbe-04897cbed08c",
+            "國賓影城@高雄義大世界":"ec07626b-b382-474e-be39-ad45eac5cd1c",
+            "國賓影城@高雄大魯閣草衙道":"f760950a-94b6-4e04-9573-831ed7283c5c",
+            "國賓影城@屏東環球購物中心":"41aae717-4464-49f4-ac26-fec2d16acbd6",
+            "國賓影城@金門昇恆昌金湖廣場":"65db51ce-3ad5-48d8-8e32-7e872e56aa4a"
+        }
+        driver = webdriver.Firefox()
+        driver.get("http://www.ambassador.com.tw/showtime_list.html?theaterid=" + theaterID[theatername])
+        sleep(1)
+        data = driver.find_element_by_xpath('//*[@id="mt-main-movie-list-view"]')
+        info = data.text.split('\n')
+        driver.close()
+        return self.Ambassador_paser(info)
 
     def Viewshow_timeCheaker(self,str):
         str=str.split(':')
@@ -171,8 +221,21 @@ class MovieTheater:
         info = data.text.split('\n')[1:]
         driver.close()
         return self.Viewshow_paser(info)
-    
+
+    def getSkcinems(self,theatername):
+        driver = webdriver.Firefox()
+        driver.get('http://www.skcinemas.com/MovieList.aspx')
+        if theatername=='台北新光影城':
+            but = driver.find_element_by_xpath('//*[@id="ctl00_ASPxMenu1_DXI2_I"]')
+            but.click()
+        elif theatername=='台南新光影城':
+            but = driver.find_element_by_xpath('//*[@id="ctl00_ASPxMenu1_DXI1_I"]')
+            but.click()
+
+
 if __name__ =='__main__':
     a = MovieTheater()
-    print(a.getMovies('台中大遠百威秀影城'))
-    print(a.getTimeTable('台中大遠百威秀影城','我要活下去'))
+    a.getSkcinems('台北新光影城')
+    #print(a.getMovies('國賓大戲院'))
+    #print(a.getTimeTable('國賓大戲院','大娛樂家'))
+    #print(a.getAmbassador('國賓大戲院'))
