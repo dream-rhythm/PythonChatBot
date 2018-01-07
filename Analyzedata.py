@@ -172,6 +172,7 @@ for MaxLink in MaxCommentLink:
 
 MovieScore = []
 MovieSentiment = []
+lenComment = []
 for x in range(0, len(MovieTitle)):
     SumScore = 0
     LenMovieComment = 0
@@ -188,9 +189,10 @@ for x in range(0, len(MovieTitle)):
             index +=1
     MovieScore.append(SumScore/LenMovieComment)
     MovieSentiment.append( sentiment_analysis(SumScore))
+    lenComment.append(LenMovieComment)
 
 df =pd.DataFrame({"Chinese Title":MovieTitle,"English Title":MovieEngTitle,"Satisfaction":Satisfaction
-    ,"Expection":Expect,"Score":MovieScore,"Sentiment":MovieSentiment})
+    ,"Expection":Expect,"Score":MovieScore,"Sentiment":MovieSentiment,"Len Comment":lenComment})
 
 writer = pd.ExcelWriter("YahooMovie.xlsx",engine="xlsxwriter")
 df.to_excel(writer,index=False,sheet_name='sheet1')
