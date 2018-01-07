@@ -2,6 +2,8 @@ import googlemaps
 import csv
 from selenium import webdriver
 from time import sleep
+from urllib.request import urlopen   #for load web page
+from bs4 import BeautifulSoup        #for analysis web page
 
 
 gmaps = googlemaps.Client(key='AIzaSyCvmftDhP4yEN-as8P7pYiT-fwwIjpRhpI')
@@ -91,20 +93,15 @@ class MovieTheater:
     def getMovies(self,TheaterName):
         if TheaterName[1]=='賓':#國賓
             table = self.getAmbassador(TheaterName)
-            self.timetable[TheaterName]=table
-            arr=[]
-            for ele in table:
-                arr.append(ele)
-            return arr
         elif TheaterName[2]=='新':#新光
-            pass
+            table = self.getSkcinems(TheaterName)
         else:
             table = self.getViewshow(TheaterName)
-            self.timetable[TheaterName]=table
-            arr = []
-            for ele in table:
-                arr.append(ele)
-            return arr
+        self.timetable[TheaterName]=table
+        arr = []
+        for ele in table:
+            arr.append(ele)
+        return arr
         #吃一個電影院的名稱(上面定義的那些)
         #以陣列回傳該影城現正上映的電影
         #因網頁使用ajex動態獲取資料
@@ -231,11 +228,26 @@ class MovieTheater:
         elif theatername=='台南新光影城':
             but = driver.find_element_by_xpath('//*[@id="ctl00_ASPxMenu1_DXI1_I"]')
             but.click()
-
+        bsobj = BeautifulSoup(driver.page_source, "lxml")
+        blocks = bsobj.find_all('td',{'class':'dxdvItem'})
+        if theatername=='台中新光影城':
+            but=driver.find_element_by_xpath('/html/body/form/div[3]/div/div/div[2]/table/tbody/tr[1]/td[2]/table/tbody/tr/td/table/tbody/tr[3]/td/div/a')
+            but.click()
+            sleep(3)
+            bsobj = BeautifulSoup(driver.page_source, "lxml")
+            blocks.extend(bsobj.find_all('td', {'class': 'dxdvItem'}))
+        movies ={}
+        for ele in blocks:
+            href=ele.find_all('a')[0].get('href')
+            driver.get('http://www.skcinemas.com/'+href)
+            times = driver.find_element_by_xpath('/html/body/form/div[3]/div/div/div[2]/div[3]/div/table/tbody/tr[2]').text
+            name = driver.find_element_by_xpath('/html/body/form/div[3]/div/div/div[1]/div[1]/div[3]/table/tbody/tr[1]/td/span').text
+            movies[name]=times.split(' ')
+        return movies
 
 if __name__ =='__main__':
     a = MovieTheater()
-    a.getSkcinems('台北新光影城')
-    #print(a.getMovies('國賓大戲院'))
-    #print(a.getTimeTable('國賓大戲院','大娛樂家'))
+    #a.getSkcinems('台北新光影城')
+    print(a.getMovies('台中新光影城'))
+    print(a.getTimeTable('台中新光影城','血觀音'))
     #print(a.getAmbassador('國賓大戲院'))
