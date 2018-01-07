@@ -1,6 +1,7 @@
 from flask import Flask,request
 from Config import WEB_HOOK_TOKEN
 from ClientHandler import *
+
 app = Flask(__name__)
 
 clientHandler =ClientHandler()
@@ -38,6 +39,7 @@ def webhook():
                            if attachment['type'] == 'location':
                                print(attachment['payload']['coordinates']['lat'],attachment['payload']['coordinates']['long'])
                                clientHandler.setLocation(sender_id,[attachment['payload']['coordinates']['lat'],attachment['payload']['coordinates']['long']])
+                               clientHandler.setMessage(sender_id,'查最近的電影院')
                                clientHandler.ClientRun(sender_id)
                elif messaging_event.get('postback'):
                    message = messaging_event['postback']

@@ -1,11 +1,19 @@
 from urllib.request import urlopen   #for load web page
 from bs4 import BeautifulSoup        #for analysis web page
-import time                          #for wait
-import re                            #for anaysis string
+from urllib.parse import quote
+import csv
+
 
 class WebScrap:
     def __init__(self):
         self.allData=[]
+        self.rank=[]
+        f = open('Ranking result.csv', 'r',encoding='utf-8')
+        csvreader = csv.reader(f)
+        for row in csvreader:
+            self.rank.append(row[0])
+        f.close()
+
     def removeSpace(self,txt):
         return txt.replace(' ','').replace('\n','')
     def getYahoo(self):
@@ -25,6 +33,19 @@ class WebScrap:
                 movieData['info']=bsobj.find_all('div', {'class': 'gray_infobox_inner'})[0].span.get_text()
                 self.allData.append(movieData)
         print(self.allData)
+    def getMovieInfo(self,movieName):
+        url = 'https://movies.yahoo.com.tw/moviesearch_result.html?keyword='+str(movieName)
+        print(quote(url, safe='/:?='))
+        html = urlopen(quote(url, safe='/:?='))
+        bsobj = BeautifulSoup(html, "lxml")
+        bsobj = bsobj.find_all('div',{'class':'release_movie_name'})[0].a
+        url = bsobj.get('href')
+        html = urlopen(url)
+        bsobj = BeautifulSoup(html,'lxml')
+        #print(bsobj.find_all('div', {'class': 'gray_infobox_inner'})[0].span)
+        return bsobj.find_all('div', {'class': 'gray_infobox_inner'})[0].span.get_text()
+    def getRank(self,start=0,to=999):
+        return self.rank[max(start,0):min(to+1,len(self.rank))]
     def getSk(self):
         html = urlopen('http://www.skcinemas.com/MovieList.aspx')
 
@@ -70,12 +91,7 @@ class WebScrap:
             movieData['movie_detail']=target.find_all('p',text = True) 
             self.allData.append(movieData)
         print(self.allData)
-if __name__ =='新光':
+
+if __name__ =='__main__':
     obj = WebScrap()
-    obj.getSk()
-if __name__ =='威秀':
-    obj = WebScrap()
-    obj.getVs()
-if __name__ =='Yahooˇ電影':
-    obj = WebScrap()
-    obj.getYahoo()
+    print(obj.getMovieInfo('衝組'))

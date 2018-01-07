@@ -18,7 +18,20 @@ class MovieTheater:
         for row in csvreader:
             self.allData.append(row)
         f.close()
-
+    def getTheaterInformation(self,theatername):
+        ans={}
+        for i in range(len(self.allData)):
+            if self.allData[i][0]==theatername:
+                ans['addr']=self.allData[i][1]
+                ans['phone']=self.allData[i][2]
+                if i<=12:
+                    ans['url']='https://www.vscinemas.com.tw/'
+                elif 12<i<=24:
+                    ans['url']='http://www.ambassador.com.tw/'
+                else:
+                    ans['url']='http://www.skcinemas.com/'
+                break
+        return  ans
     def firstrun(self):
         self.vieshow={"台北信義威秀影城":{"addr":"台北市信義區松壽路20號","phone":"(02) 8780-5566"},
                       "台北京站威秀影城":{"addr":"台北市大同區市民大道一段209號5樓","phone":"(02) 2552-5511"},
@@ -214,7 +227,7 @@ class MovieTheater:
         driver = webdriver.Firefox()
         driver.get("https://www.vscinemas.com.tw/theater/detail.aspx?id="+theaterID[theatername])
         sleep(1)
-        data = driver.find_element_by_xpath('//*[@id="movieTime-1037796943"]')
+        data = driver.find_element_by_xpath('//html/body/div[17]')
         info = data.text.split('\n')[1:]
         driver.close()
         return self.Viewshow_paser(info)
@@ -233,7 +246,6 @@ class MovieTheater:
         if theatername=='台中新光影城':
             but=driver.find_element_by_xpath('/html/body/form/div[3]/div/div/div[2]/table/tbody/tr[1]/td[2]/table/tbody/tr/td/table/tbody/tr[3]/td/div/a')
             but.click()
-            sleep(3)
             bsobj = BeautifulSoup(driver.page_source, "lxml")
             blocks.extend(bsobj.find_all('td', {'class': 'dxdvItem'}))
         movies ={}
@@ -243,6 +255,7 @@ class MovieTheater:
             times = driver.find_element_by_xpath('/html/body/form/div[3]/div/div/div[2]/div[3]/div/table/tbody/tr[2]').text
             name = driver.find_element_by_xpath('/html/body/form/div[3]/div/div/div[1]/div[1]/div[3]/table/tbody/tr[1]/td/span').text
             movies[name]=times.split(' ')
+        driver.close()
         return movies
 
 if __name__ =='__main__':
