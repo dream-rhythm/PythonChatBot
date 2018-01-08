@@ -154,6 +154,8 @@ class Client:
         if len(self.near)==0:
             self.Messenger.setText('抱歉!\n我在附近找不到電影院...')
             self.Messenger.send()
+            self.Messenger.setText('請重新傳送一個位置給我吧')
+            self.Messenger.send()
         else:
             self.place=[0,0,0]
             for ele in self.near:
