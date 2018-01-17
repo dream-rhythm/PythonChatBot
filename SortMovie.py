@@ -7,14 +7,17 @@ excel = pd.read_excel("YahooMovie.xlsx")
 Title = excel["Chinese Title"]
 Expect = excel["Expection"]
 Satisfaction = excel["Satisfaction"]
-Score = excel["Score"]
-people = excel["Len Comment"]
+Good = excel["Good"]
+Bad = excel["Bad"]
+Normal = excel["Normal"]
 i=0
 
-
-
 for Titles in Title:
-    ExpectSort[Titles] =((float(Satisfaction[i])*20*0.65) + float(Expect[i][:-1])*0.35) +(1+float(Score[i])*(people[i])/10)
+    total = float(Good[i])+float(Bad[i])+float(Normal[i])
+    if total !=0 :
+        ExpectSort[Titles] =((float(Satisfaction[i])*20*0.65) + float(Expect[i][:-1])*0.35) +(float(Good[i])-float(Bad[i]))/total
+    else:
+        ExpectSort[Titles] = ((float(Satisfaction[i]) * 20 * 0.65) + float(Expect[i][:-1]) * 0.35)
     i +=1
 
 def sort_by_value(d):

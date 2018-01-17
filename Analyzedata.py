@@ -50,8 +50,8 @@ def MobvieTitle(Moviehtml):
     linkMoreLooks = soup.find_all('div',{'class':'btn_plus_more usercom_more gabtn'})
     for linkMoreLook in linkMoreLooks:
         Look = linkMoreLook.find('a')
-
-    LinkMoreLook .append(Look['href'])
+        LinkMoreLook.append(Look['href'])
+        #print(LinkMoreLook)
     return
 
 ###Moive users' comment link
@@ -70,6 +70,8 @@ def inputUserCommentLink(MovieComment):
 
 ###Movie users's comment
 Comment = []
+#Good = []
+Bad = []
 j=0;
 def UserComment(s,j):
 
@@ -90,10 +92,10 @@ def UserComment(s,j):
         comments = soup.find_all('div',{'class':'usercom_inner _c'})
         for comment in comments:
             Context = comment.find_all('span')
+            Good = comment.find_all('div',{'class':'user_star _c'})
             for context in Context:
                 if context.getText() != '':
                     Comment.append(context.getText())
-
 ####Chinese sentimentDict
 
 degree_dict={}
@@ -154,8 +156,10 @@ def analyze(text):
 def sentiment_analysis(sum):
     if sum > 0:
         return 1
-    else:
+    elif sum == 0:
         return 0
+    else:
+        return -1
 
 for link in linkings:
     MobvieTitle(link)
@@ -170,29 +174,46 @@ for MaxLink in MaxCommentLink:
     UserComment(MaxLink,j)
     j += 1
 
-MovieScore = []
-MovieSentiment = []
-lenComment = []
+
+
+
+GoodComment = []
+BadComment = []
+Normal = []
 for x in range(0, len(MovieTitle)):
-    SumScore = 0
-    LenMovieComment = 0
+    One = 0
+    Zero = 0
+    Negative = 0
     index = Comment.index(MovieTitle[x])+1
     if x == len(MovieTitle)-1:
         while index < len(Comment):
-            SumScore += analyze(Comment[index])
-            LenMovieComment += 1
+            Score = analyze(Comment[index])
+            Score = sentiment_analysis(Score)
+            if Score == 1:
+                One += 1
+            elif Score == 0:
+                Zero += 1
+            else:
+                Negative += 1
+
             index +=1
     else:
         while index < Comment.index(MovieTitle[x+1]):
-            SumScore += analyze(Comment[index])
-            LenMovieComment += 1
+            Score = analyze(Comment[index])
+            Score = sentiment_analysis(Score)
+            if Score == 1:
+                One += 1
+            elif Score == 0:
+                Zero += 1
+            else:
+                Negative += 1
             index +=1
-    MovieScore.append(SumScore/LenMovieComment)
-    MovieSentiment.append( sentiment_analysis(SumScore))
-    lenComment.append(LenMovieComment)
+    GoodComment.append(One)
+    BadComment.append(Negative)
+    Normal.append(Zero)
 
 df =pd.DataFrame({"Chinese Title":MovieTitle,"English Title":MovieEngTitle,"Satisfaction":Satisfaction
-    ,"Expection":Expect,"Score":MovieScore,"Sentiment":MovieSentiment,"Len Comment":lenComment})
+    ,"Expection":Expect,"Good":GoodComment,"Bad":BadComment,"Normal":Normal})
 
 writer = pd.ExcelWriter("YahooMovie.xlsx",engine="xlsxwriter")
 df.to_excel(writer,index=False,sheet_name='sheet1')
